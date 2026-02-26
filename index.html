@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="src/style.css" />
+    <title>Gastos</title>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script> -->
+  </head>
+
+  <body>
+    <div class="wrapper">
+      <div class="container">
+        <div class="item">
+          <form class="form expense-form">
+            <h2>Adicionar Gasto</h2>
+
+            <div class="form-control">
+              <label for="categoria">Categoria</label>
+              <select name="select" class="form-input categorias">
+                <option value="" disabled selected>
+                  Selecione uma categoria
+                </option>
+              </select>
+            </div>
+
+            <div class="form-control">
+              <label for="amount">Adicione um valor</label>
+              <input
+                type="number"
+                id="amount"
+                class="form-input"
+                placeholder="Digite o valor"
+                step="1"
+                min="0"
+                required
+              />
+            </div>
+
+            <button class="btn" type="submit">Adicionar</button>
+          </form>
+        </div>
+
+        <div class="item">
+          <form class="form category-form">
+            <h2>Adicionar Categoria</h2>
+
+            <div class="form-control">
+              <label for="category">Categoria</label>
+              <input
+                type="text"
+                id="category"
+                required
+                class="form-input category"
+              />
+            </div>
+
+            <button type="submit" class="btn">Adicionar</button>
+          </form>
+        </div>
+
+        <div class="item expenses">
+          <h2>Histórico</h2>
+          <ul class="items"></ul>
+        </div>
+
+        <div class="item item-chart">
+          <div id="chart"></div>
+        </div>
+
+        <!-- <div class="item">
+          <span class="total"></span>
+        </div> -->
+      </div>
+    </div>
+
+    <script type="module" src="src/main.ts"></script>
+  </body>
+</html>
