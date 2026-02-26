@@ -1,108 +1,27 @@
 import ApexCharts from "apexcharts";
+import { Expense, type Store } from "./types";
+import { saveToLocalStorage, getLocalStorage } from "./localStorage";
 
 const expenseForm = document.querySelector<HTMLFormElement>(".expense-form")!;
 const categoryForm = document.querySelector<HTMLFormElement>(".category-form")!;
-
 const categorias = document.querySelector<HTMLSelectElement>(".categorias")!;
-
-const expenses = document.querySelector<HTMLDivElement>(".expenses")!;
 const ulList = document.querySelector<HTMLUListElement>(".items")!;
 
-const expensesList = JSON.parse(localStorage.getItem("expenses") || "[]");
+let chart: ApexCharts;
 
-const totalSpan = document.querySelector<HTMLSpanElement>(".total")!;
+let store: Store = { expenses: [], categories: [] };
 
-type Expense = {
-  id: string;
-  amount: number;
-  category: string;
-};
-
-const selectOptions = [
-  "Casa",
-  "Mercado",
-  "Alimentação",
-  "Transporte",
-  "Saúde",
-  "Educação",
-  "Transporte",
-  "Trabalho",
-  "Lazer",
-];
-
-// const expensesData = {
-//   expenses: [{}, {}],
-//   categories: ["..", "..", ".."],
-// };
-
-const getLocalStorage = () => {
-  const data = localStorage.getItem("expenses");
-
-  console.log("teste", data);
-
-  // not data, data = null ou seja !null = true
-  if (!data) return;
-
-  console.log("Json", JSON.parse(data));
-  return JSON.parse(data);
-};
-
-const saveToLocalStorage = (expense: Expense) => {
-  console.log("expense", expense);
-  if (!expense) return;
-  console.log("expense2", expense);
-
-  const items = getLocalStorage();
-
-  console.log("expenses", items);
-
-  let data = {
-    ...items,
-    expenses: [...items.expenses, expense],
-  };
-
-  console.log("data", data);
-
-  localStorage.setItem("expenses", JSON.stringify(data));
-
-  renderItems();
-};
-
-const loadLocalStorage = () => {
-  const data = getLocalStorage();
-
-  console.log("data", data);
-
-  let expenses = {
-    expenses: [],
-    categories: [],
-  };
-
-  if (!data) {
-    localStorage.setItem("expenses", JSON.stringify(expenses));
-  }
-  console.log("data", data);
-
-  return data;
-};
-
-loadLocalStorage();
-
-const renderItems = () => {
-  const items = getLocalStorage();
-
-  if (!items) return;
-
+const renderItems = (expenses: Expense[]) => {
   ulList.innerHTML = "";
 
-  for (let i = 0; i < items.expenses.length; i++) {
+  for (let i = 0; i < expenses.length; i++) {
     const li = document.createElement("li");
 
     const span = document.createElement("span");
     const span2 = document.createElement("span");
 
-    span.textContent = items.expenses[i].amount;
-    span2.textContent = items.expenses[i].category;
+    span.textContent = String(expenses[i].amount);
+    span2.textContent = expenses[i].category;
 
     li.appendChild(span);
     li.appendChild(span2);
@@ -113,27 +32,20 @@ const renderItems = () => {
   }
 };
 
-const renderCategories = () => {
-  const items = getLocalStorage();
-
-  if (!items) return;
-
+const renderCategories = (categories: string[]) => {
   categorias.innerHTML = "";
   categorias.innerHTML +=
     '<option value="" disabled selected>Selecione uma categoria</option>';
 
-  for (let i = 0; i < items.categories.length; i++) {
+  for (let i = 0; i < categories.length; i++) {
     const option = document.createElement("option");
 
     option.setAttribute("value", String(i + 1));
-    option.textContent = items.categories[i];
+    option.textContent = categories[i];
 
     categorias.appendChild(option);
   }
 };
-
-renderItems();
-renderCategories();
 
 const saveExpense = (event: SubmitEvent) => {
   event.preventDefault();
@@ -144,22 +56,20 @@ const saveExpense = (event: SubmitEvent) => {
 
   console.log("category", category.value, typeof category.value, category);
 
-  const items = getLocalStorage();
-
   const expense = {
     id: crypto.randomUUID(),
     amount: parseInt(amount.value),
-    category: items.categories[selectedCategory - 1] || "Nenhuma",
+    category: store.categories[selectedCategory - 1] || "Nenhuma",
   };
 
-  saveToLocalStorage(expense);
+  store.expenses.push(expense);
+
+  saveToLocalStorage(store);
+
+  renderUI();
 
   expenseForm.reset();
-
-  renderChart();
 };
-
-expenseForm.addEventListener("submit", saveExpense);
 
 const saveCategory = (event: SubmitEvent) => {
   event.preventDefault();
@@ -171,54 +81,67 @@ const saveCategory = (event: SubmitEvent) => {
 
   const categoryValue = category.value;
 
-  const items = loadLocalStorage();
+  store.categories.push(categoryValue);
 
-  const newCategories = [...items.categories, categoryValue];
+  saveToLocalStorage(store);
 
-  let data = {
-    ...items,
-    categories: newCategories,
-  };
-
-  console.log("data category", data);
-
-  localStorage.setItem("expenses", JSON.stringify(data));
+  renderUI();
 
   categoryForm.reset();
-
-  renderCategories();
 
   alert(`Categoria ${categoryValue} foi salva.`);
 };
 
+expenseForm.addEventListener("submit", saveExpense);
 categoryForm.addEventListener("submit", saveCategory);
 
-const renderChart = () => {
-  const items = getLocalStorage();
+const renderChart = (store: Store) => {
+  const grouped = store.expenses.reduce<Record<string, number>>(
+    (acc, expense) => {
+      if (!acc[expense.category]) {
+        acc[expense.category] = 0;
+      }
 
-  const grouped = items.expenses.reduce((acc, expense) => {
-    if (!acc[expense.category]) {
-      acc[expense.category] = 0;
-    }
+      acc[expense.category] += expense.amount;
+      return acc;
+    },
+    {},
+  );
 
-    acc[expense.category] += expense.amount;
-    return acc;
-  }, {});
+  console.log("store2", store);
 
-  // 2️⃣ Separar em dois arrays
+  console.log("grouped", grouped);
+
   const categories = Object.keys(grouped);
   const totals = Object.values(grouped);
 
-  console.log(categories);
+  console.log("cat", categories);
   console.log(totals);
 
-  var options = {
-    series: totals,
+  chart.updateOptions({
+    labels: categories,
+  });
+  chart.updateSeries(totals);
+};
+
+function renderUI() {
+  renderItems(store.expenses);
+  renderCategories(store.categories);
+
+  console.log("store1", store);
+  renderChart(store);
+}
+
+function main() {
+  store = getLocalStorage();
+
+  let options = {
+    series: [],
     chart: {
       width: 380,
       type: "pie",
     },
-    labels: categories,
+    labels: [],
     responsive: [
       {
         breakpoint: 480,
@@ -233,9 +156,11 @@ const renderChart = () => {
       },
     ],
   };
-  var chart = new ApexCharts(document.querySelector("#chart"), options);
 
+  chart = new ApexCharts(document.querySelector("#chart"), options);
   chart.render();
-};
 
-renderChart();
+  renderUI();
+}
+
+main();
