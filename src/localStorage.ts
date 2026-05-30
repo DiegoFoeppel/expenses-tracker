@@ -1,4 +1,4 @@
-import { type Expense, type Store } from "./types";
+import { type Store } from "./types";
 
 const getLocalStorage = () => {
   const data = localStorage.getItem("expenses");
